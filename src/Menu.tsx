@@ -12,6 +12,8 @@ interface MenuProps {
   addEvent: (e: RewardEvent) => void;
   openingBalance: number | "";
   setOpeningBalance: (v: number | "") => void;
+  startingPoints: number | "";
+  setStartingPoints: (v: number | "") => void;
 }
 
 export function Menu({
@@ -22,7 +24,9 @@ export function Menu({
   setBaseMultiplier,
   addEvent,
   openingBalance,
+  startingPoints,
   setOpeningBalance,
+  setStartingPoints
 }: MenuProps) {
   const [spendValue, setSpendValue] = useState<"" | number>(0);
   function createThreshold() {
@@ -67,6 +71,20 @@ export function Menu({
           value={openingBalance === "" ? openingBalance : openingBalance / 100}
           onChange={(e) =>
             setOpeningBalance(
+              e.target.value === ""
+                ? e.target.value
+                : Number(e.target.value) * 100
+            )
+          }
+        />
+      </div>
+      <div>Opening Balance (points)</div>
+      <div>
+        <input
+          type="number"
+          value={startingPoints === "" ? startingPoints : startingPoints / 100}
+          onChange={(e) =>
+            setStartingPoints(
               e.target.value === ""
                 ? e.target.value
                 : Number(e.target.value) * 100

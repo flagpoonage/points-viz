@@ -71,7 +71,18 @@ function createSegments(
       threshold_id: current_threshold.id,
     });
 
+    previous_cutoff = current_threshold.activeFrom;
     value_remainder = value_remainder - applicable_value;
+  }
+
+  if (value_remainder) {
+    segments.push({
+      start: previous_cutoff - value_remainder,
+      end: previous_cutoff,
+      value: value_remainder,
+      points: 0, // TODO: Negative points?
+      threshold_id: '-1'
+    })
   }
 
   return segments;
@@ -114,7 +125,7 @@ function splitRefundByThresholds(
   }));
 }
 
-export function useEvents(cumulation: number, thresholds: Threshold[]) {
+export function useEvents(cumulation: number, points: number, thresholds: Threshold[]) {
   const [events, setEvents] = useState<RewardEvent[]>([]);
 
   function addEvent(event: RewardEvent) {
@@ -130,20 +141,6 @@ export function useEvents(cumulation: number, thresholds: Threshold[]) {
   }
 
   const highestThresholds = highestFirstThresholds(thresholds);
-
-  const initialHiddenSegments = splitSpendByThresholds(
-    0,
-    {
-      id: uuid(),
-      type: "spend",
-      value: cumulation,
-    },
-    highestThresholds
-  );
-
-  const initialPoints = initialHiddenSegments.reduce((acc, val) => {
-    return acc + val.points;
-  }, 0);
 
   const aggregate = events.reduce(
     (acc, val) => {
@@ -171,7 +168,7 @@ export function useEvents(cumulation: number, thresholds: Threshold[]) {
       acc.v.push(row);
       return acc;
     },
-    { v: [] as EventAggregate[], c: cumulation, p: initialPoints }
+    { v: [] as EventAggregate[], c: cumulation, p: points }
   );
 
   return { events, values: aggregate.v, addEvent, removeEvent };
@@ -179,12 +176,15 @@ export function useEvents(cumulation: number, thresholds: Threshold[]) {
 
 export function useRewardModel(
   initMultiplier: number = 1,
-  initCumulation: number = 0
+  initCumulation: number = 0,
+  initPoints: number = 0
 ) {
   const [baseMultiplier, setBaseMultiplier] = useState(initMultiplier);
   const [startingAccumulation, setStartingAccumulation] = useState<"" | number>(
     initCumulation
   );
+  const [startingPoints, setStartingPoints] = useState<"" | number>(initPoints);
+
   const { addThreshold, removeThreshold, thresholds, updateThreshold } =
     useThresholds();
 
@@ -198,6 +198,7 @@ export function useRewardModel(
 
   const { events, addEvent, removeEvent, values } = useEvents(
     startingAccumulation || 0,
+    startingPoints || 0,
     combinedThresholds
   );
 
@@ -212,7 +213,9 @@ export function useRewardModel(
     events,
     removeEvent,
     startingAccumulation,
+    startingPoints,
     setStartingAccumulation,
+    setStartingPoints,
     values,
   };
 }

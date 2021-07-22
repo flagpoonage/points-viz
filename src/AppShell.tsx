@@ -42,7 +42,9 @@ export function AppShell() {
       <aside style={asideStyle}>
         <Menu
           openingBalance={model.startingAccumulation}
+          startingPoints={model.startingPoints}
           setOpeningBalance={model.setStartingAccumulation}
+          setStartingPoints={model.setStartingPoints}
           thresholds={model.thresholds}
           updateThreshold={model.updateThreshold}
           addThreshold={model.addThreshold}
