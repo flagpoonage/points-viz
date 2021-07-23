@@ -4,6 +4,8 @@ import { Threshold } from "./thresholds";
 import { v4 as uuid } from "uuid";
 
 interface MenuProps {
+  taxRate: number | "";
+  setTaxRate: (v: number | "") => void;
   thresholds: Threshold[];
   removeThreshold: (t: Threshold) => void;
   addThreshold: (t: Threshold) => void;
@@ -14,9 +16,13 @@ interface MenuProps {
   setOpeningBalance: (v: number | "") => void;
   startingPoints: number | "";
   setStartingPoints: (v: number | "") => void;
+  applyNegativePoints: boolean,
+  setApplyNegativePoints: (v: boolean) => void;
 }
 
 export function Menu({
+  taxRate,
+  setTaxRate,
   thresholds,
   removeThreshold,
   addThreshold,
@@ -26,7 +32,9 @@ export function Menu({
   openingBalance,
   startingPoints,
   setOpeningBalance,
-  setStartingPoints
+  setStartingPoints,
+  applyNegativePoints,
+  setApplyNegativePoints
 }: MenuProps) {
   const [spendValue, setSpendValue] = useState<"" | number>(0);
   function createThreshold() {
@@ -62,6 +70,26 @@ export function Menu({
     setSpendValue(0);
   }
 
+  function taxSpend() {
+    addEvent({
+      id: uuid(),
+      value: Number(spendValue) * 100,
+      type: "tax-spend",
+    });
+
+    setSpendValue(0);
+  }
+
+  function taxRefund() {
+    addEvent({
+      id: uuid(),
+      value: Number(spendValue) * 100,
+      type: "tax-refund",
+    });
+
+    setSpendValue(0);
+  }
+
   return (
     <>
       <div>Opening Balance ($)</div>
@@ -92,6 +120,22 @@ export function Menu({
           }
         />
       </div>
+      <div>Tax Rate</div>
+      <div>
+        <input
+          type="number"
+          value={taxRate}
+          step="0.5"
+          onChange={(e) =>
+            setTaxRate(
+              e.target.value === ""
+                ? e.target.value
+                : Number(e.target.value)
+            )
+          }
+        />
+      </div>
+      <div><input type="checkbox" checked={applyNegativePoints} onChange={e => setApplyNegativePoints(e.target.checked)} /> Apply Negative Points?</div>
       <div>Tiers</div>
       <table>
         <thead>
@@ -164,12 +208,22 @@ export function Menu({
             );
           }}
         />
-        <button disabled={!spendValue} onClick={spend}>
-          {"Spend"}
-        </button>
-        <button disabled={!spendValue} onClick={refund}>
-          {"Refund"}
-        </button>
+        <div>
+          <button disabled={!spendValue} onClick={spend}>
+            {"Spend"}
+          </button>
+          <button disabled={!spendValue} onClick={refund}>
+            {"Refund"}
+          </button>
+        </div>
+        <div>
+          <button disabled={!spendValue} onClick={taxSpend}>
+            {"Tax Spend"}
+          </button>
+          <button disabled={!spendValue} onClick={taxRefund}>
+            {"Tax Refund"}
+          </button>
+        </div>
       </div>
     </>
   );

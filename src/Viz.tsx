@@ -1,5 +1,5 @@
 import React from "react";
-import { EventAggregate } from "./reward-model";
+import { EventAggregate, RewardEvent } from "./reward-model";
 import { Threshold } from "./thresholds";
 
 interface VizProps {
@@ -27,6 +27,19 @@ export function getSpendRange (min: number, max: number): number {
   
   return Math.abs(min) + max;
   
+}
+
+export function getBackgroundColor (type: RewardEvent['type']): string {
+  switch (type) {
+    case "refund":
+      return "red";
+    case "spend":
+      return "green";
+    case "tax-refund":
+      return "orange";
+    case "tax-spend":
+      return "blue";
+  }
 }
 
 export function Viz({ events, thresholds }: VizProps) {
@@ -62,7 +75,7 @@ export function Viz({ events, thresholds }: VizProps) {
             left: `${ratio * (s.start + (has_negative ? Math.abs(min_spend) : 0))}%`,
             height: "20px",
             width: `${ratio * Math.abs(s.value)}%`,
-            backgroundColor: e.event.type === "refund" ? "red" : "green",
+            backgroundColor: getBackgroundColor(e.event.type),
           }}
         ></div>
       ))}

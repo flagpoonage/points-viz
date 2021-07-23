@@ -8,13 +8,32 @@ interface TableProps {
   removeEvent: (e: RewardEvent) => void;
 }
 
+export function getEventName (type: RewardEvent["type"]): string {
+  switch (type) {
+    case "refund":
+      return "Refund";
+    case "spend":
+      return "Spend";
+    case "tax-refund":
+      return "Tax Refund";
+    case "tax-spend":
+      return "Tax Spend";
+  }
+}
+
 export function Table({ thresholds, values, removeEvent }: TableProps) {
+
+  const has_tax = values.some(a => a.event.type === "tax-refund" || a.event.type === "tax-spend");
+
   return (
     <table style={{ width: "100%" }}>
       <thead>
         <tr>
           <th>Event</th>
           <th>Cumulative Spend</th>
+          {has_tax && (
+            <th>{`Tax accrual points`}</th>
+          )}
           {thresholds.map((t, i) => (
             <th>{`Accrual at T${i + 1} points`}</th>
           ))}
@@ -27,18 +46,17 @@ export function Table({ thresholds, values, removeEvent }: TableProps) {
         {values.map((v) => (
           <tr>
             <td>
-              {`${
-                v.event.type === "refund" ? "Refund" : "Spend"
-              } of ${formatCurrency(v.event.value)}`}
+              {`${getEventName(v.event.type)} of ${formatCurrency(v.event.value)}`}
             </td>
             <td>{formatCurrency(v.spendBalance)}</td>
+            {has_tax && ((v.event.type === "tax-refund" || v.event.type === "tax-spend") ? <td>{v.segments[0].points / 100}</td> : <td>-</td>)}
             {thresholds.map((t, i) => {
-              const segment = v.segments.find((a) => a.threshold_id === t.id);
-              if (!segment) {
+              const segments = v.segments.filter((a) => a.threshold_id === t.id);
+              if (segments.length === 0) {
                 return <td>-</td>;
               }
 
-              return <td>{segment.points / 100}</td>;
+              return <td>{segments.reduce((acc, val) => acc + val.points, 0) / 100}</td>;
             })}
             <td>
               {v.segments.reduce((acc, val) => acc + val.points, 0) / 100}

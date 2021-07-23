@@ -35,12 +35,16 @@ const tableStyle: CSSProperties = {
 };
 
 export function AppShell() {
-  const model = useRewardModel(1, 0);
+  const model = useRewardModel();
 
   return (
     <div style={containerStyle}>
       <aside style={asideStyle}>
         <Menu
+          taxRate={model.taxRate}
+          setTaxRate={model.setTaxRate}
+          applyNegativePoints={model.applyNegativePoints}
+          setApplyNegativePoints={model.setApplyNegativePoints}
           openingBalance={model.startingAccumulation}
           startingPoints={model.startingPoints}
           setOpeningBalance={model.setStartingAccumulation}
