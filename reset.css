@@ -120,7 +120,7 @@ blockquote:before,
 blockquote:after,
 q:before,
 q:after {
-  content: "";
+  content: '';
   content: none;
 }
 table {
@@ -130,4 +130,78 @@ table {
 
 * {
   box-sizing: border-box;
+}
+
+:root {
+  --anzThemeDard: #004165;
+  --anzThemePrimary: #007dba;
+  --anzThemeLight: #008dd4;
+}
+
+input[type='number'] {
+  box-sizing: border-box;
+  font-size: 14px;
+  font-family: monospace;
+  padding: 0.5rem;
+  width: 100%;
+  border-radius: 3px;
+  border: solid 1px #ccc;
+}
+
+select {
+  box-sizing: border-box;
+  font-size: 14px;
+  font-family: monospace;
+  padding: 0.5rem;
+  width: 100%;
+  border-radius: 3px;
+  border: solid 1px #ccc;
+}
+
+select:focus,
+input[type='number']:focus {
+  outline: solid 2px var(--anzThemePrimary);
+  border-color: white;
+}
+
+table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+}
+
+.event-table td,
+.event-table th {
+  transition: background-color ease-out 0.1s;
+  padding: 0.5rem;
+}
+
+.event-table tr:hover td {
+  background-color: #ffffaa;
+}
+
+.field-label {
+  font-weight: bold;
+  margin: 0.5rem 0;
+}
+
+section {
+  padding: 1rem;
+}
+
+section + section {
+  border-top: solid 1px #ccc;
+}
+
+button {
+  font-size: 14px;
+  font-family: monospace;
+}
+
+.tier-table th,
+.tier-table td {
+  padding: 0.5rem 0;
 }

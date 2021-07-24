@@ -1,37 +1,36 @@
-import React, { CSSProperties } from "react";
-import { Menu } from "./Menu";
-import { useRewardModel } from "./reward-model";
-import { Table } from "./Table";
-import { Viz } from "./Viz";
+import React, { CSSProperties } from 'react';
+import { Menu } from './Menu';
+import { useRewardModel } from './reward-model';
+import { Table } from './Table';
+import { Viz } from './Viz';
 
 const containerStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "stretch",
-  height: "100%",
-  width: "100%",
+  display: 'flex',
+  alignItems: 'stretch',
+  height: '100%',
+  width: '100%',
 };
 
 const asideStyle: CSSProperties = {
-  backgroundColor: "#00ff0022",
-  height: "100%",
-  width: "300px",
+  height: '100%',
+  width: '300px',
+  backgroundColor: '#f5f5f5',
 };
 
 const mainStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  height: "100%",
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
   width: `calc(100% - 300px)`,
 };
 
 const displayStyle: CSSProperties = {
-  height: "50%",
-  backgroundColor: "#0000ff22",
+  height: '50%',
 };
 
 const tableStyle: CSSProperties = {
-  backgroundColor: "#ff000022",
-  height: "50%",
+  padding: '1rem',
+  flexGrow: 1,
 };
 
 export function AppShell() {
@@ -41,13 +40,11 @@ export function AppShell() {
     <div style={containerStyle}>
       <aside style={asideStyle}>
         <Menu
+          selectedCard={model.selectedCard}
+          setSelectedCard={model.setSelectedCard}
           taxRate={model.taxRate}
           setTaxRate={model.setTaxRate}
-          applyNegativePoints={model.applyNegativePoints}
-          setApplyNegativePoints={model.setApplyNegativePoints}
-          openingBalance={model.startingAccumulation}
           startingPoints={model.startingPoints}
-          setOpeningBalance={model.setStartingAccumulation}
           setStartingPoints={model.setStartingPoints}
           thresholds={model.thresholds}
           updateThreshold={model.updateThreshold}

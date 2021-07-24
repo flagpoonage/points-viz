@@ -1,11 +1,19 @@
-import { useState } from "react";
-import { v4 as uuid } from "uuid";
+import { useState } from 'react';
+import { v4 as uuid } from 'uuid';
+
+export const BASE_THRESHOLD_ID = 'Tier 1';
 
 export interface Threshold {
   id: string;
   activeFrom: number;
   multiplier: number;
 }
+
+export const DEFAULT_BASE_THRESHOLD = {
+  id: BASE_THRESHOLD_ID,
+  activeFrom: 0,
+  multiplier: 1,
+};
 
 export function newThreshold(
   activeFrom: number,
@@ -48,9 +56,13 @@ export function lowestFirstThresholds(t: Threshold[]): Threshold[] {
   return tr;
 }
 
-export function useThresholds() {
+export function useThresholds(baseMultiplier: number) {
   const [thresholds, setThresholds] = useState<Threshold[]>([
-    { id: "123", activeFrom: 100000, multiplier: 0.5 },
+    {
+      id: BASE_THRESHOLD_ID,
+      activeFrom: 0,
+      multiplier: baseMultiplier,
+    },
   ]);
 
   function addThreshold(t: Threshold) {
@@ -79,5 +91,6 @@ export function useThresholds() {
     addThreshold,
     removeThreshold,
     updateThreshold,
+    setThresholds,
   };
 }

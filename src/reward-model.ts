@@ -1,6 +1,12 @@
-import { useMemo, useState } from "react";
-import { Threshold, highestFirstThresholds, useThresholds } from "./thresholds";
-import { v4 as uuid } from "uuid";
+import { useMemo, useState } from 'react';
+import {
+  Threshold,
+  highestFirstThresholds,
+  useThresholds,
+  BASE_THRESHOLD_ID,
+} from './thresholds';
+import { v4 as uuid } from 'uuid';
+import { CardConfiguration, CUSTOM_CARD_DEFAULT } from './card-configuration';
 
 export interface BaseRewardEvent {
   id: string;
@@ -8,22 +14,26 @@ export interface BaseRewardEvent {
 }
 
 export interface SpendEvent extends BaseRewardEvent {
-  type: "spend";
+  type: 'spend';
 }
 
 export interface RefundEvent extends BaseRewardEvent {
-  type: "refund";
+  type: 'refund';
 }
 
 export interface TaxSpendEvent extends BaseRewardEvent {
-  type: "tax-spend"
+  type: 'tax-spend';
 }
 
 export interface TaxRefundEvent extends BaseRewardEvent {
-  type: "tax-refund"
+  type: 'tax-refund';
 }
 
-export type RewardEvent = SpendEvent | RefundEvent | TaxSpendEvent | TaxRefundEvent;
+export type RewardEvent =
+  | SpendEvent
+  | RefundEvent
+  | TaxSpendEvent
+  | TaxRefundEvent;
 
 export interface EventSegment {
   start: number;
@@ -36,50 +46,56 @@ export interface EventSegment {
 export interface EventAggregate {
   id: string;
   event: RewardEvent;
-  segments: EventSegment[];
-  pointsBalance: number;
-  spendBalance: number;
+  csSegments: EventSegment[];
+  ecsSegments: EventSegment[];
+  currentPointsBalance: number;
+  currentCumulativeSpend: number;
+  currentExclusiveCumulativeSpend: number;
 }
 
-function createTaxSegments (
+function createTaxSegments(
   value: number,
   maximum: number,
   minimum: number,
-  taxRate: number,
-  applyNegativePoints: boolean
+  taxRate: number
 ): EventSegment[] {
   if (minimum >= 0) {
-    return [{
-      start: minimum,
-      end: maximum,
-      value: value,
-      points: taxRate * value,
-      threshold_id: 'tax'
-    }];
-  }
-  else if (maximum <= 0) {
-    return [{
-      start: minimum,
-      end: maximum,
-      value,
-      points: applyNegativePoints ? taxRate * value : 0,
-      threshold_id: 'tax'
-    }];
-  }
-  else {
-    return [{
-      start: minimum,
-      end: 0,
-      value: minimum,
-      points: applyNegativePoints ? taxRate * value : 0,
-      threshold_id: 'tax'
-    }, {
-      start: 0,
-      end: maximum,
-      value: maximum,
-      points: taxRate * value,
-      threshold_id: 'tax'
-    }]
+    return [
+      {
+        start: minimum,
+        end: maximum,
+        value: value,
+        points: taxRate * value,
+        threshold_id: 'tax',
+      },
+    ];
+  } else if (maximum <= 0) {
+    return [
+      {
+        start: minimum,
+        end: maximum,
+        value,
+        points: taxRate * value,
+        threshold_id: 'tax',
+      },
+    ];
+  } else {
+    return [
+      {
+        start: minimum,
+        end: 0,
+        value: minimum,
+        points: taxRate * value,
+        threshold_id: 'tax',
+      },
+      {
+        start: 0,
+        end: maximum,
+        value: maximum,
+        points: taxRate * value,
+        threshold_id: 'tax',
+      },
+    ];
   }
 }
 
@@ -87,12 +103,11 @@ function createSegments(
   value: number,
   maximum: number,
   minimum: number,
-  thresholds: Threshold[],
-  applyNegativePoints: boolean
+  thresholds: Threshold[]
 ): EventSegment[] {
-  const segments = [];
+  const segments: EventSegment[] = [];
 
-  const t1 = thresholds.find(a => a.id === 'base');
+  const t1 = thresholds.find((a) => a.id === BASE_THRESHOLD_ID);
 
   if (!t1) {
     throw new Error('Unable to find base threshold');
@@ -138,88 +153,136 @@ function createSegments(
       start: previous_cutoff - value_remainder,
       end: previous_cutoff,
       value: value_remainder,
-      points: applyNegativePoints ? t1.multiplier * value_remainder : 0,
-      threshold_id: applyNegativePoints ? "base" : "-1"
+      points: t1.multiplier * value_remainder,
+      threshold_id: BASE_THRESHOLD_ID,
     });
   }
 
   return segments;
 }
 
+interface SplitEventSegments {
+  cs: EventSegment[];
+  ecs: EventSegment[];
+}
+
 function splitEventByThresholds(
-  start: number,
+  currentCs: number,
+  currentEcs: number,
   event: RewardEvent,
   thresholds: Threshold[],
-  taxRate: number,
-  applyNegativePoints: boolean
-): EventSegment[] {
-
-  if (event.type === "tax-spend") {
-    return splitTaxSpend(start, event, taxRate, applyNegativePoints);
+  taxRate: number
+): SplitEventSegments {
+  if (event.type === 'tax-spend') {
+    const cs = splitTaxSpend(currentCs, event, taxRate);
+    return { cs, ecs: cs };
+  } else if (event.type === 'tax-refund') {
+    const cs = splitTaxRefund(currentCs, event, taxRate);
+    return { cs, ecs: cs };
+  } else if (event.type === 'refund') {
+    return splitRefundByThresholds(currentCs, currentEcs, event, thresholds);
   }
-  else if (event.type === 'tax-refund') {
-    return splitTaxRefund(start, event, taxRate, applyNegativePoints);
-  }
 
-  return event.type === "refund"
-    ? splitRefundByThresholds(start, event, thresholds, applyNegativePoints)
-    : splitSpendByThresholds(start, event, thresholds, applyNegativePoints);
+  return splitSpendByThresholds(currentCs, currentEcs, event, thresholds);
 }
 
 function splitSpendByThresholds(
-  start: number,
+  currentCs: number,
+  currentEcs: number,
   event: SpendEvent,
-  thresholds: Threshold[],
-  applyNegativePoints: boolean
-): EventSegment[] {
-  let maximum = event.value + start;
-  let minimum = start;
+  thresholds: Threshold[]
+): SplitEventSegments {
+  let maximum = event.value + currentCs;
+  let minimum = currentCs;
 
-  console.log("Split", start, event, maximum, minimum);
+  let ecs_maximum = event.value + currentEcs;
+  let ecs_minimum = currentEcs;
 
-  return createSegments(event.value, maximum, minimum, thresholds, applyNegativePoints);
+  const cs = createSegments(event.value, maximum, minimum, thresholds).map(
+    (a) => ({
+      ...a,
+      points: a.end === 0 ? 0 : a.points,
+    })
+  );
+
+  let ecs =
+    ecs_minimum === minimum
+      ? cs
+      : createSegments(event.value, ecs_maximum, ecs_minimum, thresholds);
+
+  return {
+    cs,
+    ecs,
+  };
 }
 function splitRefundByThresholds(
-  start: number,
+  currentCs: number,
+  currentEcs: number,
   event: RefundEvent,
-  thresholds: Threshold[],
-  applyNegativePoints: boolean
+  thresholds: Threshold[]
+): SplitEventSegments {
+  let maximum = currentCs;
+  let minimum = currentCs - event.value;
+
+  let ecs_maximum = currentEcs;
+  let ecs_minimum = currentEcs - event.value;
+
+  const cs = createSegments(event.value, maximum, minimum, thresholds).map(
+    (a) => ({
+      ...a,
+      value: -a.value,
+      points: -a.points,
+    })
+  );
+
+  let ecs =
+    ecs_minimum === minimum
+      ? cs
+      : createSegments(event.value, ecs_maximum, ecs_minimum, thresholds).map(
+          (a) => ({
+            ...a,
+            value: -a.value,
+            points: -a.points,
+          })
+        );
+
+  return {
+    cs,
+    ecs,
+  };
+}
+
+function splitTaxRefund(
+  start: number,
+  event: TaxRefundEvent,
+  taxRate: number
 ): EventSegment[] {
   let maximum = start;
   let minimum = start - event.value;
 
-  return createSegments(event.value, maximum, minimum, thresholds, applyNegativePoints).map((a) => ({
+  return createTaxSegments(event.value, maximum, minimum, taxRate).map((a) => ({
     ...a,
     value: -a.value,
     points: -a.points,
   }));
 }
 
-function splitTaxRefund(
-  start: number,
-  event: TaxRefundEvent,
-  taxRate: number,
-  applyNegativePoints: boolean
-): EventSegment[] {
-  let maximum = start;
-  let minimum = start - event.value;
-
-  return createTaxSegments(event.value, maximum, minimum, taxRate, applyNegativePoints);
-}
-
 function splitTaxSpend(
   start: number,
   event: TaxSpendEvent,
-  taxRate: number,
-  applyNegativePoints: boolean
+  taxRate: number
 ): EventSegment[] {
   let maximum = event.value + start;
   let minimum = start;
 
-  return createTaxSegments(event.value, maximum, minimum, taxRate, applyNegativePoints);
+  return createTaxSegments(event.value, maximum, minimum, taxRate);
 }
 
-export function useEvents(cumulation: number, points: number, thresholds: Threshold[], taxRate: number, applyNegativePoints: boolean) {
+export function useEvents(
+  points: number,
+  thresholds: Threshold[],
+  taxRate: number
+) {
   const [events, setEvents] = useState<RewardEvent[]>([]);
 
   function addEvent(event: RewardEvent) {
@@ -238,13 +301,29 @@ export function useEvents(cumulation: number, points: number, thresholds: Thresh
 
   const aggregate = events.reduce(
     (acc, val) => {
-      const segments = splitEventByThresholds(acc.c, val, highestThresholds, taxRate, applyNegativePoints);
-      const segment_points = segments.reduce((a, val) => a + val.points, 0);
+      const segments = splitEventByThresholds(
+        acc.cs,
+        acc.ecs,
+        val,
+        highestThresholds,
+        taxRate
+      );
+      const segment_points = segments.ecs.reduce((a, val) => a + val.points, 0);
 
-      if (val.type === "refund" || val.type === "tax-refund") {
-        acc.c -= val.value;
+      if (val.type === 'refund' || val.type === 'tax-refund') {
+        acc.cs -= val.value;
+        if (val.type === 'refund') {
+          acc.ecs -= val.value;
+        }
       } else {
-        acc.c += val.value;
+        acc.cs += val.value;
+        if (val.type === 'spend') {
+          acc.ecs += val.value;
+        }
+      }
+
+      if (acc.ecs < 0) {
+        acc.ecs = 0;
       }
 
       acc.p += segment_points;
@@ -252,67 +331,68 @@ export function useEvents(cumulation: number, points: number, thresholds: Thresh
       const row = {
         id: val.id,
         event: val,
-        segments,
-        spendBalance: acc.c,
-        pointsBalance: acc.p,
-      };
+        ecsSegments: segments.ecs,
+        csSegments: segments.cs,
+        currentCumulativeSpend: acc.cs,
+        currentPointsBalance: acc.p,
+        currentExclusiveCumulativeSpend: acc.ecs,
+      } as EventAggregate;
 
       console.log(val, segments);
 
       acc.v.push(row);
       return acc;
     },
-    { v: [] as EventAggregate[], c: cumulation, p: points }
+    { v: [] as EventAggregate[], cs: 0, ecs: 0, p: points }
   );
 
   return { events, values: aggregate.v, addEvent, removeEvent };
 }
 
 export function useRewardModel() {
-  const [applyNegativePoints, setApplyNegativePoints] = useState(true);
-  const [taxRate, setTaxRate] = useState<"" | number>(0.5);
+  const [selectedCard, _setSelectedCard] =
+    useState<CardConfiguration>(CUSTOM_CARD_DEFAULT);
+
+  const [taxRate, setTaxRate] = useState<'' | number>(0.5);
   const [baseMultiplier, setBaseMultiplier] = useState(1);
-  const [startingAccumulation, setStartingAccumulation] = useState<"" | number>(
-    0
-  );
-  const [startingPoints, setStartingPoints] = useState<"" | number>(0);
+  const [startingPoints, setStartingPoints] = useState<'' | number>(0);
 
-  const { addThreshold, removeThreshold, thresholds, updateThreshold } =
-    useThresholds();
-
-  const baseThreshold: Threshold = {
-    id: "base",
-    activeFrom: 0,
-    multiplier: baseMultiplier,
-  };
-
-  const combinedThresholds = [baseThreshold, ...thresholds];
+  const {
+    addThreshold,
+    removeThreshold,
+    thresholds,
+    updateThreshold,
+    setThresholds,
+  } = useThresholds(baseMultiplier);
 
   const { events, addEvent, removeEvent, values } = useEvents(
-    startingAccumulation || 0,
     startingPoints || 0,
-    combinedThresholds,
-    taxRate || 0,
-    applyNegativePoints
+    thresholds,
+    taxRate || 0
   );
 
+  function setSelectedCard(preset: CardConfiguration) {
+    _setSelectedCard(preset);
+    setTaxRate(preset.taxRate);
+    setBaseMultiplier(preset.thresholds[0].multiplier);
+    setThresholds(preset.thresholds);
+  }
+
   return {
+    selectedCard,
+    setSelectedCard: setSelectedCard,
     addThreshold,
     removeThreshold,
     updateThreshold,
     setBaseMultiplier,
     baseMultiplier,
-    thresholds: combinedThresholds,
-    applyNegativePoints,
-    setApplyNegativePoints,
+    thresholds: thresholds,
     addEvent,
     events,
     taxRate,
     setTaxRate,
     removeEvent,
-    startingAccumulation,
     startingPoints,
-    setStartingAccumulation,
     setStartingPoints,
     values,
   };

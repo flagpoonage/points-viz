@@ -44,12 +44,12 @@ export function getBackgroundColor (type: RewardEvent['type']): string {
 
 export function Viz({ events, thresholds }: VizProps) {
   const max_spend = events.reduce(
-    (acc, val) => (val.spendBalance > acc ? val.spendBalance : acc),
+    (acc, val) => (val.currentCumulativeSpend > acc ? val.currentCumulativeSpend : acc),
     0
   );
 
   const min_spend = events.reduce(
-    (acc, val) => (val.spendBalance < acc ? val.spendBalance : acc),
+    (acc, val) => (val.currentCumulativeSpend < acc ? val.currentCumulativeSpend : acc),
     0
   );
 
@@ -67,7 +67,7 @@ export function Viz({ events, thresholds }: VizProps) {
 
   const data = events.map((e) => (
     <div style={{ position: "relative", height: "20px", padding: "5px 0" }}>
-      {e.segments.map((s) => (
+      {e.csSegments.map((s) => (
         <div
           style={{
             position: "absolute",
