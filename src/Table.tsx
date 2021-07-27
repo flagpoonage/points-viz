@@ -72,18 +72,18 @@ export function Table({ thresholds, values, removeEvent }: TableProps) {
               {formatCurrency(v.currentCumulativeSpend)}
             </td>
             {thresholds.map((t, i) => {
-              if (
-                (v.event.type === 'tax-refund' ||
-                  v.event.type === 'tax-spend') &&
-                t.id === BASE_THRESHOLD_ID
-              ) {
-                return (
-                  <td style={{ minWidth: COL_PX.TIER }}>
-                    {v.csSegments.reduce((acc, val) => acc + val.points, 0) /
-                      100}
-                  </td>
-                );
-              }
+              // if (
+              //   (v.event.type === 'tax-refund' ||
+              //     v.event.type === 'tax-spend') &&
+              //   t.id === BASE_THRESHOLD_ID
+              // ) {
+              //   return (
+              //     <td style={{ minWidth: COL_PX.TIER }}>
+              //       {v.csSegments.reduce((acc, val) => acc + val.points, 0) /
+              //         100}
+              //     </td>
+              //   );
+              // }
 
               console.log(t.id, i);
 

@@ -7,6 +7,7 @@ import {
 } from './thresholds';
 import { v4 as uuid } from 'uuid';
 import { CardConfiguration, CUSTOM_CARD_DEFAULT } from './card-configuration';
+import { testEvents } from './test';
 
 export interface BaseRewardEvent {
   id: string;
@@ -283,7 +284,9 @@ export function useEvents(
   thresholds: Threshold[],
   taxRate: number
 ) {
-  const [events, setEvents] = useState<RewardEvent[]>([]);
+  const [events, setEvents] = useState<RewardEvent[]>(
+    [] // testEvents as RewardEvent[]
+  );
 
   function addEvent(event: RewardEvent) {
     setEvents([...events, event]);
@@ -400,4 +403,7 @@ export function useRewardModel() {
 
 export function formatCurrency(value: number) {
   return `$${(value / 100).toFixed(2)}`;
+}
+export function formatDollars(value: number) {
+  return `$${(value / 100).toFixed(0)}`;
 }

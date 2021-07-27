@@ -132,6 +132,11 @@ table {
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow: hidden;
+}
+
 :root {
   --anzThemeDard: #004165;
   --anzThemePrimary: #007dba;
@@ -179,8 +184,30 @@ th {
   padding: 0.5rem;
 }
 
+.event-table th {
+  font-weight: bold;
+  padding-bottom: 1rem;
+}
+
+.event-table tbody tr:first-child td {
+  border-top: solid 1px #ccc;
+}
+
+.event-table tr + tr td {
+  border-top: solid 1px #eee;
+}
+
+.event-table td + td {
+  border-left: solid 1px #eee;
+}
+
+/* .event-table td:first-child,
+.event-table th:first-child {
+  padding-left: 1rem;
+} */
+
 .event-table tr:hover td {
-  background-color: #ffffaa;
+  background-color: #ffffcc;
 }
 
 .field-label {

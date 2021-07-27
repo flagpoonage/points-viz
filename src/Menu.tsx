@@ -9,6 +9,8 @@ import {
 } from './card-configuration';
 
 interface MenuProps {
+  displayMode: 'cs' | 'ecs';
+  setDisplayMode: (v: 'cs' | 'ecs') => void;
   selectedCard: CardConfiguration;
   setSelectedCard: (v: CardConfiguration) => void;
   taxRate: number | '';
@@ -24,6 +26,8 @@ interface MenuProps {
 }
 
 export function Menu({
+  displayMode,
+  setDisplayMode,
   selectedCard,
   setSelectedCard,
   taxRate,
@@ -238,6 +242,49 @@ export function Menu({
           </div>
         </div>
       </section>
+      {/* TODO: Enable display mode
+        <section>
+          <div className="field-label">Graph Display Mode</div>
+          <div>
+            <button
+              style={{
+                width: '50%',
+                padding: '0.5rem',
+                cursor: displayMode === 'cs' ? '' : 'pointer',
+                backgroundColor: displayMode === 'cs' ? '#007dba' : 'white',
+                border:
+                  displayMode === 'cs'
+                    ? 'solid 1px transparent'
+                    : 'solid 1px #aaa',
+                borderRadius: '3px',
+                color: displayMode === 'cs' ? 'white' : undefined,
+              }}
+              disabled={displayMode === 'cs'}
+              onClick={() => setDisplayMode('cs')}
+            >
+              {'CS'}
+            </button>
+            <button
+              style={{
+                width: '50%',
+                padding: '0.5rem',
+                cursor: displayMode === 'ecs' ? '' : 'pointer',
+                backgroundColor: displayMode === 'ecs' ? '#007dba' : 'white',
+                border:
+                  displayMode === 'ecs'
+                    ? 'solid 1px transparent'
+                    : 'solid 1px #aaa',
+                borderRadius: '3px',
+                color: displayMode === 'ecs' ? 'white' : undefined,
+              }}
+              disabled={displayMode === 'ecs'}
+              onClick={() => setDisplayMode('ecs')}
+            >
+              {'ECS'}
+            </button>
+          </div>
+        </section>
+            */}
     </>
   );
 }

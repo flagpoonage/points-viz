@@ -1,4 +1,4 @@
-import React, { CSSProperties } from 'react';
+import React, { CSSProperties, useState } from 'react';
 import { Menu } from './Menu';
 import { useRewardModel } from './reward-model';
 import { Table } from './Table';
@@ -14,7 +14,8 @@ const containerStyle: CSSProperties = {
 const asideStyle: CSSProperties = {
   height: '100%',
   width: '300px',
-  backgroundColor: '#f5f5f5',
+  backgroundColor: '#eee',
+  borderRight: 'solid 1px #ccc',
 };
 
 const mainStyle: CSSProperties = {
@@ -25,21 +26,26 @@ const mainStyle: CSSProperties = {
 };
 
 const displayStyle: CSSProperties = {
-  height: '50%',
+  flexGrow: 1,
 };
 
 const tableStyle: CSSProperties = {
+  borderBottom: 'solid 1px #ccc',
   padding: '1rem',
-  flexGrow: 1,
+  height: '500px',
 };
 
 export function AppShell() {
   const model = useRewardModel();
 
+  const [displayMode, setDisplayMode] = useState<'cs' | 'ecs'>('cs');
+
   return (
     <div style={containerStyle}>
       <aside style={asideStyle}>
         <Menu
+          displayMode={displayMode}
+          setDisplayMode={setDisplayMode}
           selectedCard={model.selectedCard}
           setSelectedCard={model.setSelectedCard}
           taxRate={model.taxRate}
@@ -55,14 +61,18 @@ export function AppShell() {
         />
       </aside>
       <main style={mainStyle}>
-        <div style={displayStyle}>
-          <Viz events={model.values} thresholds={model.thresholds} />
-        </div>
         <div style={tableStyle}>
           <Table
             removeEvent={model.removeEvent}
             values={model.values}
             thresholds={model.thresholds}
+          />
+        </div>
+        <div style={displayStyle}>
+          <Viz
+            events={model.values}
+            thresholds={model.thresholds}
+            displayMode={displayMode}
           />
         </div>
       </main>
